@@ -9,20 +9,7 @@ st.write("Pose une question sur les documents chargés.")
 
 
 # ------------------------------------------------------------
-# 1. Clé API
-# ------------------------------------------------------------
-api_key = st.text_input(
-    "Entrez votre clé OpenAI (ne sera pas stockée)",
-    type="password"
-)
-
-if not api_key:
-    st.warning("⚠️ Entrez votre clé API OpenAI pour continuer.")
-    st.stop()
-
-
-# ------------------------------------------------------------
-# 2. Charger TOUS LES PDF et préparer RAG
+# 1. Préparer RAG au démarrage (pas de clé API ici)
 # ------------------------------------------------------------
 if "rag_chain" not in st.session_state:
 
@@ -30,7 +17,6 @@ if "rag_chain" not in st.session_state:
 
     all_docs = []
 
-    # 🔥 LIRE AUTOMATIQUEMENT TOUS LES PDF DU DOSSIER /pdfs
     pdf_folder = "pdfs"
     pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
 
@@ -42,19 +28,17 @@ if "rag_chain" not in st.session_state:
         docs = load_pdf(path)
         all_docs.extend(docs)
 
-    # Split + Vectorstore
     splits = split_documents(all_docs)
     retriever = create_vectorstore(splits)
 
-    # RAG
-    rag_chain = create_rag(retriever, api_key)
+    rag_chain = create_rag(retriever)
     st.session_state["rag_chain"] = rag_chain
 
     st.success("✅ RAG prêt ! Vous pouvez poser une question.")
 
 
 # ------------------------------------------------------------
-# 3. Champ de question
+# 2. Pose de question
 # ------------------------------------------------------------
 question = st.text_input("Votre question :")
 
