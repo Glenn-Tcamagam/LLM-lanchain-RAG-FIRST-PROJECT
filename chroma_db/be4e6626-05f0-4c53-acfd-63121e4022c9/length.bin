@@ -1,0 +1,8 @@
+implémentent les propriétés de la même façon, cela peut toujours être utile (et ça ne coûte rien) de 
+mentionner des préfixes vendeurs dans le cas où certains de vos visiteurs utiliseraient des vieilles 
+versions de navigateurs.
+Les préfixes vendeurs sont les suivants :
+• Pour Chrome et Safari : -webkit-
+• Pour Mozilla : -moz-
+• Pour Internet Explorer : -ms-
+1-html_css.odt 57f64\n
