@@ -9,7 +9,7 @@ st.write("Pose une question sur les documents chargés.")
 
 
 # ------------------------------------------------------------
-# 1. Charger les PDF + Créer RAG (une seule fois)
+# 1. Charger les PDF + Créer RAG
 # ------------------------------------------------------------
 if "rag_chain" not in st.session_state:
 
@@ -28,32 +28,28 @@ if "rag_chain" not in st.session_state:
             docs = load_pdf(path)
             all_docs.extend(docs)
 
-        # Split + Embeddings
         splits = split_documents(all_docs)
         retriever = create_vectorstore(splits)
 
-        # Construire le RAG
-        rag_chain = create_rag(retriever)
-        st.session_state["rag_chain"] = rag_chain
+        # 👉 SESSION ID UNIQUE PAR UTILISATEUR
+        st.session_state["rag_chain"] = create_rag(retriever, session_id="client_1")
 
-    st.success("✅ RAG prêt ! Vous pouvez poser une question.")
-
-
-# ------------------------------------------------------------
-# 2. UI de question
-# ------------------------------------------------------------
-st.subheader("❓ Pose ta question")
-
-question = st.text_input("Votre question :", placeholder="Ex: Quel est l'objectif du document 2 ?")
+    st.success("✅ RAG prêt ! Pose une question.")
 
 
 # ------------------------------------------------------------
-# 3. Réponse + affichage des sources
+# 2. UI question
+# ------------------------------------------------------------
+question = st.text_input("Votre question :", placeholder="Ex: Quelle est la TVA ?")
+
+
+# ------------------------------------------------------------
+# 3. Réponse
 # ------------------------------------------------------------
 if st.button("Envoyer") and question:
 
-    with st.spinner("🧠 Analyse des documents..."):
-        answer = st.session_state["rag_chain"].invoke(question)
+    with st.spinner("🧠 Analyse des documents et de la mémoire..."):
+        answer = st.session_state["rag_chain"](question)
 
     st.subheader("📌 Réponse")
     st.write(answer)
