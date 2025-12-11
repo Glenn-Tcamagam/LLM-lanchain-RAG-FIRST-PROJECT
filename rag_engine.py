@@ -155,3 +155,40 @@ def create_rag(retriever, session_id="default"):
         return answer
 
     return rag_with_memory
+
+
+
+# -----------------------------
+# Helper: construire la chaîne RAG complète (utilisée par app.py)
+# -----------------------------
+import os  # si déjà importé dans le fichier, ça ne pose pas de problème
+
+def get_rag_chain(session_id: str = "client_1", pdf_folder: str = "pdfs"):
+    """
+    Convenience function used by app.py.
+    - Charge automatiquement tous les PDFs du dossier `pdf_folder`
+    - Split/embeddings/vectorstore
+    - Crée et retourne la fonction RAG (callable) prête à être utilisée.
+    """
+    # 1) récupérer fichiers pdf
+    if not os.path.isdir(pdf_folder):
+        raise ValueError(f"Dossier PDF introuvable: {pdf_folder}")
+
+    pdf_files = [f for f in os.listdir(pdf_folder) if f.lower().endswith(".pdf")]
+    if not pdf_files:
+        raise ValueError(f"Aucun fichier PDF trouvé dans {pdf_folder}.")
+
+    # 2) charger tous les docs
+    all_docs = []
+    for pdf in pdf_files:
+        path = os.path.join(pdf_folder, pdf)
+        docs = load_pdf(path)
+        all_docs.extend(docs)
+
+    # 3) split + vectorstore
+    splits = split_documents(all_docs)
+    retriever = create_vectorstore(splits)
+
+    # 4) créer la chaîne RAG avec mémoire (DynamoDB) — create_rag doit accepter session_id
+    #    create_rag retourne un callable (par ex. rag_with_memory)
+    return create_rag(retriever, session_id=session_id)

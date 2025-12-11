@@ -1,55 +1,83 @@
 import streamlit as st
-import os
-from rag_engine import load_pdf, split_documents, create_vectorstore, create_rag
+from rag_engine import get_rag_chain
 
-st.set_page_config(page_title="RAG Multi-PDF", page_icon="📚", layout="wide")
+st.set_page_config(page_title="RAG Chatbot", page_icon="🤖", layout="wide")
 
-st.title("📚 RAG Multi-PDF — Streamlit App")
-st.write("Pose une question sur les documents chargés.")
+# ----------- CSS STYLE WHATSAPP/MESSENGER -------------
+st.markdown("""
+<style>
+
+.chat-container {
+    max-height: 650px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 12px;
+    background-color: #f5f6f8;
+    border: 1px solid #ddd;
+}
+
+.user-bubble {
+    background-color: #DCF8C6;
+    color: #000;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin: 5px 0;
+    max-width: 70%;
+    float: right;
+    clear: both;
+}
+
+.bot-bubble {
+    background-color: #ffffff;
+    color: #000;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin: 5px 0;
+    max-width: 70%;
+    float: left;
+    clear: both;
+    border: 1px solid #ececec;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 
-# ------------------------------------------------------------
-# 1. Charger les PDF + Créer RAG
-# ------------------------------------------------------------
+# ---------- INITIALISATION RAG + MEMORY ----------
 if "rag_chain" not in st.session_state:
+    st.session_state["rag_chain"] = get_rag_chain()
 
-    with st.spinner("🔄 Chargement des PDF et création des embeddings..."):
-
-        all_docs = []
-
-        pdf_folder = "pdfs"
-        pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
-
-        st.write(f"📄 PDFs détectés : {pdf_files}")
-
-        for pdf in pdf_files:
-            path = os.path.join(pdf_folder, pdf)
-            st.write(f"➡️ Chargement : {pdf}")
-            docs = load_pdf(path)
-            all_docs.extend(docs)
-
-        splits = split_documents(all_docs)
-        retriever = create_vectorstore(splits)
-
-        # 👉 SESSION ID UNIQUE PAR UTILISATEUR
-        st.session_state["rag_chain"] = create_rag(retriever, session_id="client_1")
-
-    st.success("✅ RAG prêt ! Pose une question.")
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []   # { "role": "user"/"assistant", "content": "..." }
 
 
-# ------------------------------------------------------------
-# 2. UI question
-# ------------------------------------------------------------
-question = st.text_input("Votre question :", placeholder="Ex: Quelle est la TVA ?")
+st.title("🤖 Chatbot RAG avec Mémoire")
 
 
-# ------------------------------------------------------------
-# 3. Réponse
-# ------------------------------------------------------------
-if st.button("Envoyer") and question:
+# ---------- DISPLAY CHAT HISTORY ----------
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
 
-    with st.spinner("🧠 Analyse des documents et de la mémoire..."):
-        answer = st.session_state["rag_chain"](question)
+for message in st.session_state.chat_history:
+    if message["role"] == "user":
+        st.markdown(f"<div class='user-bubble'>{message['content']}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='bot-bubble'>{message['content']}</div>", unsafe_allow_html=True)
 
-    st.subheader("📌 Réponse")
-    st.write(answer)
+st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ---------- USER INPUT ----------
+user_input = st.chat_input("Pose ta question...")
+
+if user_input:
+    # Ajouter message user
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    # Récupération réponse via RAG
+    answer = st.session_state["rag_chain"](user_input)
+
+    # Ajouter message bot
+    st.session_state.chat_history.append({"role": "assistant", "content": answer})
+
+    # Rafraîchir pour scroll automatique
+    st.rerun()
